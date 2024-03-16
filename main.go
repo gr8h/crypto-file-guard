@@ -19,18 +19,18 @@ func main() {
 		// []byte("data block 9"),
 	}
 
-	tree := merkletree.NewMerkleTree(dataBlocks)
+	tree, _ := merkletree.NewMerkleTree(dataBlocks)
 	fmt.Println("Root hash:", tree.Root.Hash)
 
 	tree.PrintTree()
 
-	var proof [][]byte = tree.GenerateProof([]byte("data block 5"))
+	proof, _ := tree.GenerateProof([]byte("data block 5"))
 	fmt.Print("Proof: ")
 	for _, p := range proof {
 		fmt.Printf("[%s] ", hex.EncodeToString(p)[:10])
 	}
 	fmt.Println()
 
-	var verify bool = tree.VerifyProof(proof, []byte("data block 5"), tree.Root.Hash)
+	verify, _ := tree.VerifyProof(proof, []byte("data block 5"), tree.Root.Hash)
 	fmt.Println("Verify: ", verify)
 }

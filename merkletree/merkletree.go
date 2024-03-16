@@ -15,7 +15,8 @@ func hashData(data []byte) []byte {
 
 // MerkleTree represents the structure of a Merkle tree
 type MerkleTree struct {
-	Root *MerkleNode
+	Root   *MerkleNode
+	Leaves [][]byte
 }
 
 // MerkleNode represents a node in the Merkle tree
@@ -49,8 +50,10 @@ func NewMerkleTree(dataBlocks [][]byte) *MerkleTree {
 	}
 
 	var nodes []*MerkleNode
+	var leaves [][]byte
 	for _, hash := range hashes {
 		nodes = append(nodes, NewMerkleNode(nil, nil, hash))
+		leaves = append(leaves, hash)
 	}
 
 	for len(nodes) > 1 {
@@ -72,7 +75,7 @@ func NewMerkleTree(dataBlocks [][]byte) *MerkleTree {
 		nodes = level
 	}
 
-	return &MerkleTree{Root: nodes[0]}
+	return &MerkleTree{Root: nodes[0], Leaves: leaves}
 }
 
 func (t *MerkleTree) GenerateProof(dataBlock []byte) [][]byte {
@@ -108,14 +111,25 @@ func (t *MerkleTree) GenerateProof(dataBlock []byte) [][]byte {
 	return nil
 }
 
-func (t *MerkleTree) VerifyProof(proof [][]byte, dataBlock []byte, rootHash []byte, index uint) bool {
+func (t *MerkleTree) GetLeafIndex(dataBlock []byte) int {
+	targetHash := hashData(dataBlock)
+	for i, hash := range t.Leaves {
+		if bytes.Equal(hash, targetHash) {
+			return i
+		}
+	}
+	return -1
+}
+
+func (t *MerkleTree) VerifyProof(proof [][]byte, dataBlock []byte, rootHash []byte) bool {
 	targetHash := hashData(dataBlock)
 	currentHash := targetHash
+	index := t.GetLeafIndex(dataBlock)
 
 	for _, hash := range proof {
 		var dataToHash []byte
 
-		// Determine the order of concatenation based on whether the current proof hash is a left sibling
+		// Determine the order of concatenation
 		if index%2 == 0 {
 			dataToHash = append([]byte(currentHash), []byte(hash)...)
 		} else {
@@ -124,11 +138,9 @@ func (t *MerkleTree) VerifyProof(proof [][]byte, dataBlock []byte, rootHash []by
 
 		index = index / 2
 
-		// Hash the concatenated data
 		currentHash = hashData(dataToHash)
 	}
 
-	// The final hash must match the known root hash
 	return bytes.Equal(currentHash, rootHash)
 }
 

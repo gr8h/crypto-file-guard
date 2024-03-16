@@ -24,7 +24,7 @@ func TestProofEvenBlocks(t *testing.T) {
 	tree := NewMerkleTree(dataBlocks)
 	proof := tree.GenerateProof([]byte("Block 1"))
 
-	if !tree.VerifyProof(proof, []byte("Block 1"), tree.Root.Hash, 0) {
+	if !tree.VerifyProof(proof, []byte("Block 1"), tree.Root.Hash) {
 		t.Errorf("VerifyProof returned false for valid proof")
 	}
 }
@@ -40,7 +40,7 @@ func TestProofOddBlocks(t *testing.T) {
 	tree := NewMerkleTree(dataBlocks)
 	proof := tree.GenerateProof([]byte("Block 5"))
 
-	if !tree.VerifyProof(proof, []byte("Block 5"), tree.Root.Hash, 4) {
+	if !tree.VerifyProof(proof, []byte("Block 5"), tree.Root.Hash) {
 		t.Errorf("VerifyProof returned false for valid proof")
 	}
 }
@@ -56,7 +56,7 @@ func TestWrongProof(t *testing.T) {
 	tree := NewMerkleTree(dataBlocks)
 	proof := tree.GenerateProof([]byte("Block 5"))
 
-	if tree.VerifyProof(proof, []byte("Block 4"), tree.Root.Hash, 3) {
+	if tree.VerifyProof(proof, []byte("Block 4"), tree.Root.Hash) {
 		t.Errorf("VerifyProof returned true for invalid proof")
 	}
 }

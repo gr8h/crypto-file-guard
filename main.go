@@ -31,6 +31,6 @@ func main() {
 	}
 	fmt.Println()
 
-	var verify bool = tree.VerifyProof(proof, []byte("data block 5"), tree.Root.Hash, 4)
+	var verify bool = tree.VerifyProof(proof, []byte("data block 5"), tree.Root.Hash)
 	fmt.Println("Verify: ", verify)
 }

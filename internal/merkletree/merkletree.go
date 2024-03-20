@@ -8,8 +8,11 @@ import (
 	"fmt"
 )
 
+type Data []byte
+type Hash []byte
+
 // hashData computes the SHA-256 hash of input data
-func hashData(data []byte) ([]byte, error) {
+func hashData(data Data) (Hash, error) {
 
 	if data == nil {
 		return nil, errors.New("merkletree: data is empty")
@@ -22,18 +25,18 @@ func hashData(data []byte) ([]byte, error) {
 // MerkleTree represents the structure of a Merkle tree
 type MerkleTree struct {
 	Root   *MerkleNode
-	Leaves [][]byte
+	Leaves []Hash
 }
 
 // MerkleNode represents a node in the Merkle tree
 type MerkleNode struct {
 	Left  *MerkleNode
 	Right *MerkleNode
-	Hash  []byte
+	Hash  Hash
 }
 
 // NewMerkleNode creates a new Merkle node with the given left and right children and hash.
-func NewMerkleNode(left, right *MerkleNode, hash []byte) (*MerkleNode, error) {
+func NewMerkleNode(left, right *MerkleNode, hash Hash) (*MerkleNode, error) {
 	if left == nil && right == nil && hash == nil {
 		return nil, errors.New("merkletree: leaf node must have a hash")
 	}
@@ -63,7 +66,7 @@ func NewMerkleTree(dataBlocks [][]byte) (*MerkleTree, error) {
 		return nil, errors.New("merkletree: dataBlocks cannot be empty")
 	}
 
-	var hashes [][]byte
+	var hashes []Hash
 	for _, data := range dataBlocks {
 
 		hashedData, err := hashData(data)
@@ -75,7 +78,7 @@ func NewMerkleTree(dataBlocks [][]byte) (*MerkleTree, error) {
 	}
 
 	var nodes []*MerkleNode
-	var leaves [][]byte
+	var leaves []Hash
 	for _, hash := range hashes {
 		node, err := NewMerkleNode(nil, nil, hash)
 		if err != nil {
@@ -112,8 +115,8 @@ func NewMerkleTree(dataBlocks [][]byte) (*MerkleTree, error) {
 }
 
 // GenerateProof returns the Merkle proof for the given data block.
-func (t *MerkleTree) GenerateProof(targetHash []byte) ([][]byte, error) {
-	var proof [][]byte
+func (t *MerkleTree) GenerateProof(targetHash Hash) ([]Hash, error) {
+	var proof []Hash
 
 	var generate func(node *MerkleNode) bool
 	generate = func(node *MerkleNode) bool {
@@ -145,7 +148,7 @@ func (t *MerkleTree) GenerateProof(targetHash []byte) ([][]byte, error) {
 }
 
 // GetLeafByData returns the index of the leaf node that contains the given data block.
-func (t *MerkleTree) GetLeafByData(dataBlock []byte) (int, error) {
+func (t *MerkleTree) GetLeafByData(dataBlock Data) (int, error) {
 	targetHash, err := hashData(dataBlock)
 	if err != nil {
 		return -1, fmt.Errorf("failed to hash data block: %w", err)
@@ -160,7 +163,7 @@ func (t *MerkleTree) GetLeafByData(dataBlock []byte) (int, error) {
 }
 
 // GetLeafByIndex returns the leaf node at the given index.
-func (t *MerkleTree) GetLeafByIndex(index int) ([]byte, error) {
+func (t *MerkleTree) GetLeafByIndex(index int) (Hash, error) {
 	if index < 0 || index >= len(t.Leaves) {
 		return nil, errors.New("merkletree: index out of bounds")
 	}
@@ -169,14 +172,14 @@ func (t *MerkleTree) GetLeafByIndex(index int) ([]byte, error) {
 
 // GetRootHash returns the hash of the root of the Merkle Tree.
 // If the root is nil, it returns nil and an error.
-func (t *MerkleTree) GetRootHash() ([]byte, error) {
+func (t *MerkleTree) GetRootHash() (Hash, error) {
 	if t.Root == nil {
 		return nil, errors.New("merkletree: the tree is empty or not initialized")
 	}
 	return t.Root.Hash, nil
 }
 
-func (t *MerkleTree) VerifyProof(proof [][]byte, dataBlock []byte, rootHash []byte) (bool, error) {
+func (t *MerkleTree) VerifyProof(proof []Hash, dataBlock Data, rootHash Hash) (bool, error) {
 	targetHash, err := hashData(dataBlock)
 	if err != nil {
 		return false, fmt.Errorf("failed to hash data block: %w", err)
@@ -192,9 +195,9 @@ func (t *MerkleTree) VerifyProof(proof [][]byte, dataBlock []byte, rootHash []by
 
 		// Determine the order of concatenation
 		if index%2 == 0 {
-			dataToHash = append([]byte(currentHash), []byte(hash)...)
+			dataToHash = append(Hash(currentHash), Hash(hash)...)
 		} else {
-			dataToHash = append([]byte(hash), []byte(currentHash)...)
+			dataToHash = append(Hash(hash), Hash(currentHash)...)
 		}
 
 		index = index / 2

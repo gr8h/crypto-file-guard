@@ -2,7 +2,6 @@ package merkletree
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -10,17 +9,6 @@ import (
 
 type Data []byte
 type Hash []byte
-
-// hashData computes the SHA-256 hash of input data
-func hashData(data Data) (Hash, error) {
-
-	if data == nil {
-		return nil, errors.New("merkletree: data is empty")
-	}
-
-	sum := sha256.Sum256(data)
-	return sum[:], nil
-}
 
 // MerkleTree represents the structure of a Merkle tree
 type MerkleTree struct {
@@ -47,7 +35,7 @@ func NewMerkleNode(left, right *MerkleNode, hash Hash) (*MerkleNode, error) {
 		node.Hash = hash
 	} else {
 		prevHashes := append([]byte(left.Hash), right.Hash...)
-		hashedData, err := hashData(prevHashes)
+		hashedData, err := HashData(prevHashes)
 		if err != nil {
 			return nil, fmt.Errorf("failed to hash node data: %w", err)
 		}
@@ -61,25 +49,14 @@ func NewMerkleNode(left, right *MerkleNode, hash Hash) (*MerkleNode, error) {
 }
 
 // NewMerkleTree creates a new Merkle tree from the given data blocks.
-func NewMerkleTree(dataBlocks [][]byte) (*MerkleTree, error) {
-	if len(dataBlocks) == 0 {
+func NewMerkleTree(dataHashes []Hash) (*MerkleTree, error) {
+	if len(dataHashes) == 0 {
 		return nil, errors.New("merkletree: dataBlocks cannot be empty")
-	}
-
-	var hashes []Hash
-	for _, data := range dataBlocks {
-
-		hashedData, err := hashData(data)
-		if err != nil {
-			return nil, fmt.Errorf("failed to hash node data: %w", err)
-		}
-
-		hashes = append(hashes, hashedData)
 	}
 
 	var nodes []*MerkleNode
 	var leaves []Hash
-	for _, hash := range hashes {
+	for _, hash := range dataHashes {
 		node, err := NewMerkleNode(nil, nil, hash)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create new merkle node: %w", err)
@@ -149,7 +126,7 @@ func (t *MerkleTree) GenerateProof(targetHash Hash) ([]Hash, error) {
 
 // GetLeafByData returns the index of the leaf node that contains the given data block.
 func (t *MerkleTree) GetLeafByData(dataBlock Data) (int, error) {
-	targetHash, err := hashData(dataBlock)
+	targetHash, err := HashData(dataBlock)
 	if err != nil {
 		return -1, fmt.Errorf("failed to hash data block: %w", err)
 	}
@@ -180,7 +157,7 @@ func (t *MerkleTree) GetRootHash() (Hash, error) {
 }
 
 func (t *MerkleTree) VerifyProof(proof []Hash, dataBlock Data, rootHash Hash) (bool, error) {
-	targetHash, err := hashData(dataBlock)
+	targetHash, err := HashData(dataBlock)
 	if err != nil {
 		return false, fmt.Errorf("failed to hash data block: %w", err)
 	}
@@ -202,7 +179,7 @@ func (t *MerkleTree) VerifyProof(proof []Hash, dataBlock Data, rootHash Hash) (b
 
 		index = index / 2
 
-		currentHash, err = hashData(dataToHash)
+		currentHash, err = HashData(dataToHash)
 		if err != nil {
 			return false, fmt.Errorf("failed to hash data: %w", err)
 		}

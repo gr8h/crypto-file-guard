@@ -5,8 +5,16 @@ import (
 	"testing"
 )
 
+func dataToHash(dataBlocks [][]byte) []Hash {
+	hashes := make([]Hash, len(dataBlocks))
+	for i, block := range dataBlocks {
+		hashes[i], _ = HashData(block)
+	}
+	return hashes
+}
+
 func TestEmptyTree(t *testing.T) {
-	_, err := NewMerkleTree([][]byte{})
+	_, err := NewMerkleTree([]Hash{})
 	if err == nil {
 		t.Errorf("Expected error for empty data blocks, got nil")
 	}
@@ -14,7 +22,10 @@ func TestEmptyTree(t *testing.T) {
 
 func TestSingleNodeTree(t *testing.T) {
 	dataBlocks := [][]byte{[]byte("Single Block")}
-	tree, err := NewMerkleTree(dataBlocks)
+
+	hashes := dataToHash(dataBlocks)
+
+	tree, err := NewMerkleTree(hashes)
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err)
 	}
@@ -24,7 +35,7 @@ func TestSingleNodeTree(t *testing.T) {
 		t.Errorf("Unexpected error: %s", err)
 	}
 
-	expectedHash, _ := hashData([]byte("Single Block"))
+	expectedHash, _ := HashData([]byte("Single Block"))
 	if !bytes.Equal(rootHash, expectedHash) {
 		t.Errorf("Root hash does not match expected single block hash")
 	}
@@ -35,7 +46,9 @@ func TestProofForNonexistentBlock(t *testing.T) {
 		[]byte("Block 1"),
 		[]byte("Block 2"),
 	}
-	tree, err := NewMerkleTree(dataBlocks)
+	hashes := dataToHash(dataBlocks)
+
+	tree, err := NewMerkleTree(hashes)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -52,7 +65,9 @@ func TestProofEvenBlocks(t *testing.T) {
 		[]byte("Block 3"),
 		[]byte("Block 4"),
 	}
-	tree, err := NewMerkleTree(dataBlocks)
+	hashes := dataToHash(dataBlocks)
+
+	tree, err := NewMerkleTree(hashes)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -85,7 +100,10 @@ func TestProofOddBlocks(t *testing.T) {
 		[]byte("Block 4"),
 		[]byte("Block 5"),
 	}
-	tree, err := NewMerkleTree(dataBlocks)
+
+	hashes := dataToHash(dataBlocks)
+
+	tree, err := NewMerkleTree(hashes)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -118,7 +136,9 @@ func TestWrongProof(t *testing.T) {
 		[]byte("Block 4"),
 		[]byte("Block 5"),
 	}
-	tree, err := NewMerkleTree(dataBlocks)
+	hashes := dataToHash(dataBlocks)
+
+	tree, err := NewMerkleTree(hashes)
 	if err != nil {
 		t.Errorf(err.Error())
 	}

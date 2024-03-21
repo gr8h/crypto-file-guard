@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gr8h/crypto-file-guard/internal/merkletree"
-	"github.com/gr8h/crypto-file-guard/internal/server"
+	"github.com/gr8h/crypto-file-guard/merkletree"
+	"github.com/gr8h/crypto-file-guard/server"
 )
 
 type Client struct {
@@ -19,7 +19,7 @@ type Client struct {
 func NewClient(server *server.Server) *Client {
 	return &Client{
 		Server:      server,
-		StoragePath: "./internal/client/files",
+		StoragePath: "./client/files",
 	}
 }
 

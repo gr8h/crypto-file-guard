@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+option go_package = "server/pb";
+
+// Hash represents the hash data. Assuming hash is a byte array.
+message Hash { bytes value = 1; }
+
+// MerkleNode represents a node in the Merkle tree.
+message MerkleNode {
+  MerkleNode left = 1;
+  MerkleNode right = 2;
+  Hash hash = 3;
+}
+
+// MerkleTree represents the structure of a Merkle tree.
+message MerkleTree {
+  MerkleNode root = 1;
+  repeated Hash leaves = 2;
+}
+
+// Server represents the server managing files with a Merkle tree.
+message Server {
+  repeated Hash files = 1;
+  MerkleTree tree = 2;
+  string storagePath = 3;
+}
+
+// Service definitions
+service FileGuard {
+  rpc NewServer(NewServerRequest) returns (NewServerResponse) {}
+
+  rpc AddFile(AddFileRequest) returns (AddFileResponse) {}
+
+  rpc ConstructMerkleTree(ConstructMerkleTreeRequest)
+      returns (ConstructMerkleTreeResponse) {}
+
+  rpc GetProof(GetProofRequest) returns (GetProofResponse) {}
+
+  rpc GetFile(GetFileRequest) returns (GetFileResponse) {}
+}
+
+// Request and Response messages for each service method
+message NewServerRequest { string storagePath = 1; }
+
+message NewServerResponse { Server server = 1; }
+
+message AddFileRequest { bytes content = 1; }
+
+message AddFileResponse {}
+
+message ConstructMerkleTreeRequest {}
+
+message ConstructMerkleTreeResponse {}
+
+message GetProofRequest { int32 index = 1; }
+
+message GetProofResponse { repeated Hash proof = 1; }
+
+message GetFileRequest { int32 index = 1; }
+
+message GetFileResponse { bytes fileContent = 1; }

@@ -1,4 +1,4 @@
-package server
+package main
 
 import (
 	"encoding/hex"
@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gr8h/crypto-file-guard/internal/merkletree"
+	"github.com/gr8h/crypto-file-guard/merkletree"
 )
 
 type Server struct {
@@ -18,7 +18,7 @@ type Server struct {
 // NewServer initializes a new server instance without any files.
 func NewServer(storagePath string) *Server {
 
-	storagePath = filepath.Join("./internal/server/files/", storagePath, "/")
+	storagePath = filepath.Join("./server/files/", storagePath, "/")
 
 	return &Server{
 		StoragePath: storagePath,
@@ -95,18 +95,6 @@ func (s *Server) GetProof(index int) (merkletree.Proof, error) {
 	}
 
 	return proof, nil
-}
-
-// GetFileContent returns the content of a file given its name.
-func (s *Server) GetFileContent(fileHash merkletree.Hash) ([]byte, error) {
-	filePath := filepath.Join(s.StoragePath, hex.EncodeToString(fileHash)[:10])
-
-	fmt.Println("File path: ", filePath)
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read file %s: %v", filePath, err)
-	}
-	return content, nil
 }
 
 // GetFile returns the content of a file given its index.

@@ -9,6 +9,7 @@ import (
 
 type Data []byte
 type Hash []byte
+type Proof []Hash
 
 // MerkleTree represents the structure of a Merkle tree
 type MerkleTree struct {
@@ -125,12 +126,7 @@ func (t *MerkleTree) GenerateProof(targetHash Hash) ([]Hash, error) {
 }
 
 // GetLeafByData returns the index of the leaf node that contains the given data block.
-func (t *MerkleTree) GetLeafByData(dataBlock Data) (int, error) {
-	targetHash, err := HashData(dataBlock)
-	if err != nil {
-		return -1, fmt.Errorf("failed to hash data block: %w", err)
-	}
-
+func (t *MerkleTree) GetLeafIndex(targetHash Hash) (int, error) {
 	for i, hash := range t.Leaves {
 		if bytes.Equal(hash, targetHash) {
 			return i, nil
@@ -156,13 +152,10 @@ func (t *MerkleTree) GetRootHash() (Hash, error) {
 	return t.Root.Hash, nil
 }
 
-func (t *MerkleTree) VerifyProof(proof []Hash, dataBlock Data, rootHash Hash) (bool, error) {
-	targetHash, err := HashData(dataBlock)
-	if err != nil {
-		return false, fmt.Errorf("failed to hash data block: %w", err)
-	}
+// VerifyProof verifies the given proof for the given data block and root hash.
+func (t *MerkleTree) VerifyProof(proof []Hash, targetHash Hash, rootHash Hash) (bool, error) {
 	currentHash := targetHash
-	index, err := t.GetLeafByData(dataBlock)
+	index, err := t.GetLeafIndex(currentHash)
 	if err != nil {
 		return false, fmt.Errorf("failed to get leaf index: %w", err)
 	}
@@ -188,6 +181,7 @@ func (t *MerkleTree) VerifyProof(proof []Hash, dataBlock Data, rootHash Hash) (b
 	return bytes.Equal(currentHash, rootHash), nil
 }
 
+// PrintTree prints the Merkle tree level by level.
 func (t *MerkleTree) PrintTree() {
 	level := 0
 	nodes := []*MerkleNode{t.Root}

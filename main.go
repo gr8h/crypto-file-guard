@@ -10,45 +10,31 @@ import (
 
 func main() {
 
-	files := []string{"File1", "File2", "File3"}
-	server := server.NewServer()
-	client := client.NewClient()
+	files := []string{"0.txt", "1.txt", "2.txt", "3.txt", "4.txt"}
 
-	client.UploadFiles(server, files)
+	server := server.NewServer("test")
+
+	client := client.NewClient(server)
+
+	client.ConstructMerkleTree(files)
 
 	server.Tree.PrintTree()
 
-	fmt.Println("Root hash:", hex.EncodeToString(server.Tree.Root.Hash))
-	fmt.Println("Root hash:", hex.EncodeToString(client.RootHash))
+	fmt.Println("Root hash main:", hex.EncodeToString(client.RootHash))
 
-	file, isValid := client.RequestFile(server, 3)
+	proof, _ := client.GetProof(2)
 
-	fmt.Println("File:", file)
-	fmt.Println("Is valid:", isValid)
+	fmt.Print("Proof: ")
+	for _, p := range proof {
+		fmt.Printf("[%s] ", hex.EncodeToString(p)[:10])
+	}
+	fmt.Println()
 
-	// dataBlocks := [][]byte{
-	// 	[]byte("data block 1"),
-	// 	[]byte("data block 2"),
-	// 	[]byte("data block 3"),
-	// 	[]byte("data block 4"),
-	// 	[]byte("data block 5"),
-	// 	// []byte("data block 6"),
-	// 	// []byte("data block 7"),
-	// 	// []byte("data block 8"),
-	// 	// []byte("data block 9"),
-	// }
-	// tree, _ := merkletree.NewMerkleTree(dataBlocks)
-	// fmt.Println("Root hash:", tree.Root.Hash)
+	fileHash, _ := server.GetFile(2)
 
-	// tree.PrintTree()
-
-	// proof, _ := tree.GenerateProof([]byte("data block 5"))
-	// fmt.Print("Proof: ")
-	// for _, p := range proof {
-	// 	fmt.Printf("[%s] ", hex.EncodeToString(p)[:10])
-	// }
-	// fmt.Println()
-
-	// verify, _ := tree.VerifyProof(proof, []byte("data block 5"), tree.Root.Hash)
-	// fmt.Println("Verify: ", verify)
+	isValid, err := client.VerifyProof(proof, fileHash, client.RootHash)
+	if err != nil {
+		fmt.Println("Error verifying proof: ", err)
+	}
+	fmt.Println("Is valid: ", isValid)
 }

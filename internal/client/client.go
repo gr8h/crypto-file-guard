@@ -23,17 +23,16 @@ func NewClient(server *server.Server) *Client {
 	}
 }
 
-// UploadFiles uploads the given files to the server by reading each file's content,
+// ConstructMerkleTree uploads the given files to the server by reading each file's content,
 // calling the server's StoreFileContent method for each one, and then
 // instructing the server to construct the Merkle tree.
-func (c *Client) UploadFiles(files []string) error {
+func (c *Client) ConstructMerkleTree(files []string) error {
 	for _, file := range files {
 		file = filepath.Join(c.StoragePath, file)
 		file, err := filepath.Abs(file)
 		if err != nil {
 			return fmt.Errorf("error getting absolute path for file %s: %v", file, err)
 		}
-		// add the current working directory to filePath
 		content, err := os.ReadFile(file)
 
 		if err != nil {
@@ -63,17 +62,16 @@ func (c *Client) UploadFiles(files []string) error {
 }
 
 // RequestFile requests a file and its proof from the server, then verifies the file's integrity.
-func (c *Client) RequestFile(index int) (merkletree.Hash, []merkletree.Hash) {
-	file, proof, err := c.Server.GetFileAndProof(index)
+func (c *Client) GetProof(index int) ([]merkletree.Hash, error) {
+	proof, err := c.Server.GetProof(index)
 	if err != nil {
-		fmt.Println("Error requesting file:", err)
-		return nil, nil
+		return nil, fmt.Errorf("error requesting file: %v", err)
 	}
 
-	return file, proof
+	return proof, nil
 }
 
-// VerifyFile verifies the given proof for the given file and root hash.
-func (c *Client) VerifyProof(proof []merkletree.Hash, file merkletree.Data, rootHash []byte) (bool, error) {
-	return c.Server.VerifyProof(proof, []byte(file), rootHash)
+// VerifyProof verifies the given proof for the given data block and root hash.
+func (c *Client) VerifyProof(proof []merkletree.Hash, fileHash merkletree.Hash, rootHash []byte) (bool, error) {
+	return c.Server.Tree.VerifyProof(proof, fileHash, rootHash)
 }

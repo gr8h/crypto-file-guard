@@ -78,27 +78,23 @@ func (s *Server) ConstructMerkleTree() error {
 	return nil
 }
 
-// GetFileAndProof returns the file at the given index and its Merkle proof.
-func (s *Server) GetFileAndProof(index int) (merkletree.Hash, []merkletree.Hash, error) {
+// GetProof returns the Merkle proof for the file at the given index.
+func (s *Server) GetProof(index int) (merkletree.Proof, error) {
 	if index < 0 || index >= len(s.Files) {
-		return nil, nil, fmt.Errorf("server: index out of bounds")
+		return nil, fmt.Errorf("server: index out of bounds")
 	}
 
-	data, err := s.Tree.GetLeafByIndex(index)
+	fileHash, err := s.Tree.GetLeafByIndex(index)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	proof, err := s.Tree.GenerateProof(data)
+	proof, err := s.Tree.GenerateProof(fileHash)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return s.Files[index], proof, nil
-}
 
-// VerifyProof verifies the given proof for the given data block and root hash.
-func (s *Server) VerifyProof(proof []merkletree.Hash, dataBlock []byte, rootHash merkletree.Hash) (bool, error) {
-	return s.Tree.VerifyProof(proof, dataBlock, rootHash)
+	return proof, nil
 }
 
 // GetFileContent returns the content of a file given its name.
@@ -111,4 +107,9 @@ func (s *Server) GetFileContent(fileHash merkletree.Hash) ([]byte, error) {
 		return nil, fmt.Errorf("failed to read file %s: %v", filePath, err)
 	}
 	return content, nil
+}
+
+// GetFile returns the content of a file given its index.
+func (s *Server) GetFile(index int) (merkletree.Hash, error) {
+	return s.Tree.GetLeafByIndex(index)
 }

@@ -5,9 +5,12 @@ import (
 	"log"
 	"net"
 
-	"github.com/heshamshabanah/crypto-file-guard/server"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+
+	"github.com/gr8h/crypto-file-guard/pkg/merkletree"
+	pb "github.com/gr8h/crypto-file-guard/server/pb"
+	server "github.com/gr8h/crypto-file-guard/server/pkg"
 )
 
 type fileGuardServer struct {
@@ -21,11 +24,15 @@ func (fgs *fileGuardServer) NewServer(ctx context.Context, req *pb.NewServerRequ
 }
 
 func (fgs *fileGuardServer) ConstructMerkleTree(ctx context.Context, req *pb.ConstructMerkleTreeRequest) (*pb.ConstructMerkleTreeResponse, error) {
-	err := fgs.Server.ConstructMerkleTree()
+	rootHash, err := fgs.Server.ConstructMerkleTree()
 	if err != nil {
 		return nil, err
 	}
-	return &pb.ConstructMerkleTreeResponse{}, nil
+
+	// Convert the rootHash to the protobuf format
+	protobufRootHash := &pb.Hash{Value: rootHash[:]}
+
+	return &pb.ConstructMerkleTreeResponse{RootHash: protobufRootHash}, nil
 }
 
 func (fgs *fileGuardServer) GetFile(ctx context.Context, req *pb.GetFileRequest) (*pb.GetFileResponse, error) {
@@ -58,6 +65,19 @@ func (fgs *fileGuardServer) AddFile(ctx context.Context, req *pb.AddFileRequest)
 		return nil, err
 	}
 	return &pb.AddFileResponse{}, nil
+}
+
+func (fgs *fileGuardServer) VerifyProof(ctx context.Context, req *pb.VerifyProofRequest) (*pb.VerifyProofResponse, error) {
+	proof := make(merkletree.Proof, len(req.GetProof()))
+	for i, p := range req.GetProof() {
+		proof[i] = p.GetValue()
+	}
+
+	valid, err := fgs.Server.VerifyProof(proof, req.GetTargetHash().GetValue(), req.GetRootHash().GetValue())
+	if err != nil {
+		return nil, err
+	}
+	return &pb.VerifyProofResponse{Valid: valid}, nil
 }
 
 func main() {

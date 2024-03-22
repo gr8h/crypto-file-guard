@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"encoding/hex"
@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gr8h/crypto-file-guard/merkletree"
+	"github.com/gr8h/crypto-file-guard/pkg/merkletree"
 )
 
 type Server struct {
@@ -49,7 +49,8 @@ func (s *Server) AddFile(content []byte) error {
 }
 
 // ConstructMerkleTree reads the content of all stored files and constructs/updates the Merkle tree.
-func (s *Server) ConstructMerkleTree() error {
+func (s *Server) ConstructMerkleTree() (merkletree.Hash, error) {
+	s.Tree = nil
 	var hashes []merkletree.Hash
 
 	for _, fileHash := range s.Files {
@@ -58,12 +59,12 @@ func (s *Server) ConstructMerkleTree() error {
 
 		content, err := os.ReadFile(filePath)
 		if err != nil {
-			return fmt.Errorf("failed to read file %s: %v", filePath, err)
+			return nil, fmt.Errorf("failed to read file %s: %v", filePath, err)
 		}
 
 		hashedData, err := merkletree.HashData(content)
 		if err != nil {
-			return fmt.Errorf("failed to hash node data: %w", err)
+			return nil, fmt.Errorf("failed to hash node data: %w", err)
 		}
 
 		hashes = append(hashes, hashedData)
@@ -71,16 +72,20 @@ func (s *Server) ConstructMerkleTree() error {
 
 	tree, err := merkletree.NewMerkleTree(hashes)
 	if err != nil {
-		return fmt.Errorf("failed to construct/update Merkle tree: %v", err)
+		return nil, fmt.Errorf("failed to construct/update Merkle tree: %v", err)
 	}
 
 	s.Tree = tree
-	return nil
+
+	tree.PrintTree()
+	s.Files = nil
+
+	return tree.Root.Hash, nil
 }
 
 // GetProof returns the Merkle proof for the file at the given index.
 func (s *Server) GetProof(index int) (merkletree.Proof, error) {
-	if index < 0 || index >= len(s.Files) {
+	if index < 0 || index >= len(s.Tree.Leaves) {
 		return nil, fmt.Errorf("server: index out of bounds")
 	}
 
@@ -100,4 +105,9 @@ func (s *Server) GetProof(index int) (merkletree.Proof, error) {
 // GetFile returns the content of a file given its index.
 func (s *Server) GetFile(index int) (merkletree.Hash, error) {
 	return s.Tree.GetLeafByIndex(index)
+}
+
+// VerifyProof verifies the given proof for the given data block and root hash.
+func (s *Server) VerifyProof(proof merkletree.Proof, fileHash merkletree.Hash, rootHash merkletree.Hash) (bool, error) {
+	return s.Tree.VerifyProof(proof, fileHash, rootHash)
 }

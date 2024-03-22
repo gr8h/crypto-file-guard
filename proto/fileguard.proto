@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "server/pb";
+option go_package = "/pb";
 
 // Hash represents the hash data. Assuming hash is a byte array.
 message Hash { bytes value = 1; }
@@ -37,6 +37,8 @@ service FileGuard {
   rpc GetProof(GetProofRequest) returns (GetProofResponse) {}
 
   rpc GetFile(GetFileRequest) returns (GetFileResponse) {}
+
+  rpc VerifyProof(VerifyProofRequest) returns (VerifyProofResponse) {}
 }
 
 // Request and Response messages for each service method
@@ -50,7 +52,7 @@ message AddFileResponse {}
 
 message ConstructMerkleTreeRequest {}
 
-message ConstructMerkleTreeResponse {}
+message ConstructMerkleTreeResponse { Hash rootHash = 1; }
 
 message GetProofRequest { int32 index = 1; }
 
@@ -59,3 +61,11 @@ message GetProofResponse { repeated Hash proof = 1; }
 message GetFileRequest { int32 index = 1; }
 
 message GetFileResponse { bytes fileContent = 1; }
+
+message VerifyProofRequest {
+  repeated Hash proof = 1;
+  Hash targetHash = 2;
+  Hash rootHash = 3;
+}
+
+message VerifyProofResponse { bool valid = 1; }

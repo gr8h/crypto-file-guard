@@ -19,6 +19,5 @@ install:
 	export PATH=$PATH:$(go env GOPATH)/bin
 
 test:
-	rm -rf tmp && mkdir tmp
 	go test -cover -race ./pkg/merkletree/...
 

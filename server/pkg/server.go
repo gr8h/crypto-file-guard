@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/gr8h/crypto-file-guard/pkg/merkletree"
 )
 
 type Server struct {
+	mu          sync.Mutex
 	Files       []merkletree.Hash
 	Tree        *merkletree.MerkleTree
 	StoragePath string
@@ -26,6 +28,8 @@ func NewServer(storagePath string) *Server {
 }
 
 func (s *Server) AddFile(content []byte) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	// Ensure the storage directory exists
 	if err := os.MkdirAll(s.StoragePath, 0755); err != nil {
 		return fmt.Errorf("failed to create storage directory: %v", err)

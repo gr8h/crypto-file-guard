@@ -1,4 +1,4 @@
-package merkletree
+package main
 
 import (
 	"bytes"
@@ -82,7 +82,7 @@ func TestProofEvenBlocks(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
-	valid, err := tree.VerifyProof(proof, dataBlocks[0], tree.Root.Hash)
+	valid, err := tree.VerifyProof(proof, targetHash, tree.Root.Hash)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -118,7 +118,7 @@ func TestProofOddBlocks(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
-	valid, err := tree.VerifyProof(proof, dataBlocks[4], tree.Root.Hash)
+	valid, err := tree.VerifyProof(proof, targetHash, tree.Root.Hash)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -153,7 +153,7 @@ func TestWrongProof(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
-	valid, err := tree.VerifyProof(proof, dataBlocks[3], tree.Root.Hash)
+	valid, err := tree.VerifyProof(proof, hashes[0], tree.Root.Hash)
 	if err != nil {
 		t.Errorf(err.Error())
 	}

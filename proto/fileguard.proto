@@ -19,7 +19,7 @@ message MerkleTree {
 }
 
 // Server represents the server managing files with a Merkle tree.
-message Server {
+message ClientSession {
   repeated Hash files = 1;
   MerkleTree tree = 2;
   string storagePath = 3;
@@ -27,7 +27,8 @@ message Server {
 
 // Service definitions
 service FileGuard {
-  rpc NewServer(NewServerRequest) returns (NewServerResponse) {}
+
+  rpc NewSession(NewSessionRequest) returns (NewSessionResponse) {}
 
   rpc AddFile(AddFileRequest) returns (AddFileResponse) {}
 
@@ -41,31 +42,39 @@ service FileGuard {
   rpc VerifyProof(VerifyProofRequest) returns (VerifyProofResponse) {}
 }
 
-// Request and Response messages for each service method
-message NewServerRequest { string storagePath = 1; }
+message NewSessionRequest {}
+message NewSessionResponse { SessionID sessionId = 1; }
 
-message NewServerResponse { Server server = 1; }
-
-message AddFileRequest { bytes content = 1; }
+message AddFileRequest {
+  string sessionId = 1;
+  bytes content = 2;
+}
 
 message AddFileResponse {}
 
-message ConstructMerkleTreeRequest {}
+message ConstructMerkleTreeRequest { string sessionId = 1; }
 
 message ConstructMerkleTreeResponse { Hash rootHash = 1; }
 
-message GetProofRequest { int32 index = 1; }
+message GetProofRequest {
+  string sessionId = 1;
+  int32 index = 2;
+}
 
 message GetProofResponse { repeated Hash proof = 1; }
 
-message GetFileRequest { int32 index = 1; }
+message GetFileRequest {
+  string sessionId = 1;
+  int32 index = 2;
+}
 
 message GetFileResponse { bytes fileContent = 1; }
 
 message VerifyProofRequest {
-  repeated Hash proof = 1;
-  Hash targetHash = 2;
-  Hash rootHash = 3;
+  string sessionId = 1;
+  repeated Hash proof = 2;
+  Hash targetHash = 3;
+  Hash rootHash = 4;
 }
 
 message VerifyProofResponse { bool valid = 1; }

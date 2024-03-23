@@ -18,13 +18,15 @@ type fileGuardServer struct {
 	Server *server.Server
 }
 
-func (fgs *fileGuardServer) NewServer(ctx context.Context, req *pb.NewServerRequest) (*pb.NewServerResponse, error) {
-	fgs.Server = server.NewServer(req.GetStoragePath())
-	return &pb.NewServerResponse{}, nil
+func (fgs *fileGuardServer) NewSession(ctx context.Context, req *pb.NewSessionRequest) (*pb.NewSessionResponse, error) {
+
+	sessionID := fgs.Server.NewSession()
+
+	return &pb.NewSessionResponse{SessionId: &pb.SessionID{Value: sessionID}}, nil
 }
 
 func (fgs *fileGuardServer) ConstructMerkleTree(ctx context.Context, req *pb.ConstructMerkleTreeRequest) (*pb.ConstructMerkleTreeResponse, error) {
-	rootHash, err := fgs.Server.ConstructMerkleTree()
+	rootHash, err := fgs.Server.ConstructMerkleTree(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +38,7 @@ func (fgs *fileGuardServer) ConstructMerkleTree(ctx context.Context, req *pb.Con
 }
 
 func (fgs *fileGuardServer) GetFile(ctx context.Context, req *pb.GetFileRequest) (*pb.GetFileResponse, error) {
-	content, err := fgs.Server.GetFile(int(req.GetIndex()))
+	content, err := fgs.Server.GetFile(req.GetSessionId(), int(req.GetIndex()))
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +46,7 @@ func (fgs *fileGuardServer) GetFile(ctx context.Context, req *pb.GetFileRequest)
 }
 
 func (fgs *fileGuardServer) GetProof(ctx context.Context, req *pb.GetProofRequest) (*pb.GetProofResponse, error) {
-	proof, err := fgs.Server.GetProof(int(req.GetIndex()))
+	proof, err := fgs.Server.GetProof(req.GetSessionId(), int(req.GetIndex()))
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +62,7 @@ func (fgs *fileGuardServer) GetProof(ctx context.Context, req *pb.GetProofReques
 }
 
 func (fgs *fileGuardServer) AddFile(ctx context.Context, req *pb.AddFileRequest) (*pb.AddFileResponse, error) {
-	err := fgs.Server.AddFile(req.GetContent())
+	err := fgs.Server.AddFile(req.GetSessionId(), req.GetContent())
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +75,7 @@ func (fgs *fileGuardServer) VerifyProof(ctx context.Context, req *pb.VerifyProof
 		proof[i] = p.GetValue()
 	}
 
-	valid, err := fgs.Server.VerifyProof(proof, req.GetTargetHash().GetValue(), req.GetRootHash().GetValue())
+	valid, err := fgs.Server.VerifyProof(req.GetSessionId(), proof, req.GetTargetHash().GetValue(), req.GetRootHash().GetValue())
 	if err != nil {
 		return nil, err
 	}
@@ -90,8 +92,7 @@ func main() {
 	reflection.Register(s)
 
 	// Initialize your Server struct here.
-	storagePath := "test"
-	serverInstance := server.NewServer(storagePath)
+	serverInstance := server.NewServer("")
 
 	pb.RegisterFileGuardServer(s, &fileGuardServer{Server: serverInstance})
 
@@ -100,4 +101,5 @@ func main() {
 	if err := s.Serve(listener); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
+
 }

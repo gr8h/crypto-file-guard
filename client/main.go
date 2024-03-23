@@ -25,25 +25,30 @@ func main() {
 
 	client := pb.NewFileGuardClient(conn)
 
-	fmt.Println("Client connected to server")
+	// Connect to the server
+	s, err := client.NewSession(context.Background(), &pb.NewSessionRequest{})
+	if err != nil {
+		log.Fatalf("error creating new server: %v", err)
+	}
+
+	sessionId := s.GetSessionId().GetValue()
+	fmt.Printf("Session ID: %s\n", sessionId)
 
 	// add the current working directory to filePath
-	rootHash, err := ConstructMerkleTree(client)
+	rootHash, err := ConstructMerkleTree(client, sessionId)
 	if err != nil {
 		log.Fatalf("error constructing Merkle tree: %v", err)
 	}
 
-	fmt.Println("Merkle tree constructed successfully")
-
-	fmt.Printf("Root hash: %x\n", rootHash.GetRootHash().Value)
+	fmt.Printf("Merkle tree constructed successfully - Root hash: %x\n", rootHash.GetRootHash().Value)
 
 	// Get proof for the first file
-	proof, err := client.GetProof(context.Background(), &pb.GetProofRequest{Index: 0})
+	proof, err := client.GetProof(context.Background(), &pb.GetProofRequest{Index: 0, SessionId: sessionId})
 	if err != nil {
 		log.Fatalf("error getting proof: %v", err)
 	}
 
-	fileContenet, err := client.GetFile(context.Background(), &pb.GetFileRequest{Index: 0})
+	fileContenet, err := client.GetFile(context.Background(), &pb.GetFileRequest{Index: 0, SessionId: sessionId})
 	if err != nil {
 		log.Fatalf("error getting file content: %v", err)
 	}
@@ -51,7 +56,7 @@ func main() {
 	fmt.Printf("File content: %x\n", fileContenet.GetFileContent())
 	targetHashPB := &pb.Hash{Value: fileContenet.GetFileContent()}
 
-	isValid, err := client.VerifyProof(context.Background(), &pb.VerifyProofRequest{Proof: proof.GetProof(), TargetHash: targetHashPB, RootHash: rootHash.GetRootHash()})
+	isValid, err := client.VerifyProof(context.Background(), &pb.VerifyProofRequest{Proof: proof.GetProof(), TargetHash: targetHashPB, RootHash: rootHash.GetRootHash(), SessionId: sessionId})
 	if err != nil {
 		log.Fatalf("error verifying proof: %v", err)
 	}
@@ -63,7 +68,7 @@ func main() {
 	}
 }
 
-func ConstructMerkleTree(client pb.FileGuardClient) (*pb.ConstructMerkleTreeResponse, error) {
+func ConstructMerkleTree(client pb.FileGuardClient, sessionId string) (*pb.ConstructMerkleTreeResponse, error) {
 	files := []string{"0.txt", "1.txt", "2.txt", "3.txt", "4.txt"}
 	for _, file := range files {
 		file = filepath.Join(StoragePath, file)
@@ -77,13 +82,13 @@ func ConstructMerkleTree(client pb.FileGuardClient) (*pb.ConstructMerkleTreeResp
 			return nil, fmt.Errorf("error reading file %s: %v", file, err)
 		}
 
-		_, err = client.AddFile(context.Background(), &pb.AddFileRequest{Content: content})
+		_, err = client.AddFile(context.Background(), &pb.AddFileRequest{Content: content, SessionId: sessionId})
 		if err != nil {
 			return nil, fmt.Errorf("error uploading file %s: %v", filepath.Base(file), err)
 		}
 	}
 
-	rootHash, err := client.ConstructMerkleTree(context.Background(), &pb.ConstructMerkleTreeRequest{})
+	rootHash, err := client.ConstructMerkleTree(context.Background(), &pb.ConstructMerkleTreeRequest{SessionId: sessionId})
 	if err != nil {
 		return nil, fmt.Errorf("error constructing Merkle tree: %v", err)
 	}

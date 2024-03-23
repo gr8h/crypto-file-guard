@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	FileGuard_NewServer_FullMethodName           = "/FileGuard/NewServer"
+	FileGuard_NewSession_FullMethodName          = "/FileGuard/NewSession"
 	FileGuard_AddFile_FullMethodName             = "/FileGuard/AddFile"
 	FileGuard_ConstructMerkleTree_FullMethodName = "/FileGuard/ConstructMerkleTree"
 	FileGuard_GetProof_FullMethodName            = "/FileGuard/GetProof"
@@ -31,7 +31,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FileGuardClient interface {
-	NewServer(ctx context.Context, in *NewServerRequest, opts ...grpc.CallOption) (*NewServerResponse, error)
+	NewSession(ctx context.Context, in *NewSessionRequest, opts ...grpc.CallOption) (*NewSessionResponse, error)
 	AddFile(ctx context.Context, in *AddFileRequest, opts ...grpc.CallOption) (*AddFileResponse, error)
 	ConstructMerkleTree(ctx context.Context, in *ConstructMerkleTreeRequest, opts ...grpc.CallOption) (*ConstructMerkleTreeResponse, error)
 	GetProof(ctx context.Context, in *GetProofRequest, opts ...grpc.CallOption) (*GetProofResponse, error)
@@ -47,9 +47,9 @@ func NewFileGuardClient(cc grpc.ClientConnInterface) FileGuardClient {
 	return &fileGuardClient{cc}
 }
 
-func (c *fileGuardClient) NewServer(ctx context.Context, in *NewServerRequest, opts ...grpc.CallOption) (*NewServerResponse, error) {
-	out := new(NewServerResponse)
-	err := c.cc.Invoke(ctx, FileGuard_NewServer_FullMethodName, in, out, opts...)
+func (c *fileGuardClient) NewSession(ctx context.Context, in *NewSessionRequest, opts ...grpc.CallOption) (*NewSessionResponse, error) {
+	out := new(NewSessionResponse)
+	err := c.cc.Invoke(ctx, FileGuard_NewSession_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (c *fileGuardClient) VerifyProof(ctx context.Context, in *VerifyProofReques
 // All implementations must embed UnimplementedFileGuardServer
 // for forward compatibility
 type FileGuardServer interface {
-	NewServer(context.Context, *NewServerRequest) (*NewServerResponse, error)
+	NewSession(context.Context, *NewSessionRequest) (*NewSessionResponse, error)
 	AddFile(context.Context, *AddFileRequest) (*AddFileResponse, error)
 	ConstructMerkleTree(context.Context, *ConstructMerkleTreeRequest) (*ConstructMerkleTreeResponse, error)
 	GetProof(context.Context, *GetProofRequest) (*GetProofResponse, error)
@@ -118,8 +118,8 @@ type FileGuardServer interface {
 type UnimplementedFileGuardServer struct {
 }
 
-func (UnimplementedFileGuardServer) NewServer(context.Context, *NewServerRequest) (*NewServerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method NewServer not implemented")
+func (UnimplementedFileGuardServer) NewSession(context.Context, *NewSessionRequest) (*NewSessionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method NewSession not implemented")
 }
 func (UnimplementedFileGuardServer) AddFile(context.Context, *AddFileRequest) (*AddFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddFile not implemented")
@@ -149,20 +149,20 @@ func RegisterFileGuardServer(s grpc.ServiceRegistrar, srv FileGuardServer) {
 	s.RegisterService(&FileGuard_ServiceDesc, srv)
 }
 
-func _FileGuard_NewServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NewServerRequest)
+func _FileGuard_NewSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NewSessionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FileGuardServer).NewServer(ctx, in)
+		return srv.(FileGuardServer).NewSession(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FileGuard_NewServer_FullMethodName,
+		FullMethod: FileGuard_NewSession_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileGuardServer).NewServer(ctx, req.(*NewServerRequest))
+		return srv.(FileGuardServer).NewSession(ctx, req.(*NewSessionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -265,8 +265,8 @@ var FileGuard_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*FileGuardServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "NewServer",
-			Handler:    _FileGuard_NewServer_Handler,
+			MethodName: "NewSession",
+			Handler:    _FileGuard_NewSession_Handler,
 		},
 		{
 			MethodName: "AddFile",

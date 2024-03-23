@@ -191,7 +191,7 @@ func (t *MerkleTree) PrintTree() {
 		for i := 0; i < count; i++ {
 			node := nodes[0]
 			nodes = nodes[1:]
-			fmt.Printf("[%s] ", hex.EncodeToString(node.Hash)[:10])
+			fmt.Printf("[%s] ", hex.EncodeToString(node.Hash)[:16])
 			if node.Left != nil {
 				nodes = append(nodes, node.Left)
 			}

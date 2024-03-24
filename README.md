@@ -14,10 +14,33 @@ A secure way to upload, store, and verify small files on a server using Merkle t
 
 - Go (Golang)
 - Protocol Buffers (Proto3)
+- Docker
 
 ## Getting Started
 
 Here's the commands to set up and run the application.
+
+### Docker
+
+- **doker-build**: Builds the docker images
+
+  ```bash
+  make doker-build
+  ```
+
+- **doker-down**: Halts the Docker containers
+
+  ```bash
+  make doker-down
+  ```
+
+- **doker-run**: Executes the Docker containers
+
+  ```bash
+  make doker-run
+  ```
+
+### Locally
 
 - **start-server**: Launches the server application.
 
@@ -42,10 +65,6 @@ Here's the commands to set up and run the application.
   ```bash
   make test
   ```
-
-- Prerequisites: software or tools that need to be installed before running your application.
-- Installation steps: how to clone/download the repository and any necessary build steps.
-- How to use Docker Compose to spin up your application.
 
 ## Components
 
@@ -74,6 +93,9 @@ For the server:
 For the client:
 
 - The client, currently a basic command-line interface for server interaction, could be enriched with additional functionalities.
+  - Download files
+  - Add/Remove files to an existing tree
+  - CMD comand to get the proof
 - Refining the process for uploading and downloading files to ensure smoother and more reliable file transfers.
 
 Additionally, extending test coverage for both server and client components is crucial for ensuring the robustness and reliability of the application.

@@ -17,7 +17,12 @@ import (
 )
 
 func main() {
-	conn, err := grpc.Dial("localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	serverBaseUrl := os.Getenv("SERVERBASEURL")
+	if serverBaseUrl == "" {
+		serverBaseUrl = "localhost:8080"
+	}
+
+	conn, err := grpc.Dial(serverBaseUrl, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("failed to connect: %v", err)
 	}

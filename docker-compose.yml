@@ -1,0 +1,35 @@
+version: '3.9'
+services:
+  server:
+    build: 
+      context: .
+      dockerfile: server.Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - server-data:/fileguard/server-files
+    environment:
+      - 'BASESTORAGEPATH=/fileguard/server-files'
+    networks:
+      - fileguard-network
+  client:
+    build: 
+      context: .
+      dockerfile: client.Dockerfile
+    ports:
+      - "8081:8080"
+    volumes:
+      - client-data:/fileguard/client/files
+    environment:
+      - 'SERVERBASEURL=server:8080'
+    stdin_open: true
+    tty: true
+    depends_on:
+      - server
+    networks:
+      - fileguard-network
+volumes:
+  server-data:
+  client-data:
+networks:
+  fileguard-network:

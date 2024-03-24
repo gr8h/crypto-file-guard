@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net"
+	"os"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -69,7 +70,9 @@ func main() {
 	s := grpc.NewServer()
 	reflection.Register(s)
 
-	serverInstance := server.NewServer("")
+	baseStoragePath := os.Getenv("BASESTORAGEPATH")
+
+	serverInstance := server.NewServer(baseStoragePath)
 
 	pb.RegisterFileGuardServer(s, &fileGuardServer{Server: serverInstance})
 

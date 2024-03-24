@@ -43,7 +43,7 @@ service FileGuard {
 }
 
 message NewSessionRequest {}
-message NewSessionResponse { SessionID sessionId = 1; }
+message NewSessionResponse { string sessionId = 1; }
 
 message AddFileRequest {
   string sessionId = 1;
@@ -61,7 +61,7 @@ message GetProofRequest {
   int32 index = 2;
 }
 
-message GetProofResponse { repeated Hash proof = 1; }
+message GetProofResponse { repeated bytes proof = 1; }
 
 message GetFileRequest {
   string sessionId = 1;
@@ -72,7 +72,7 @@ message GetFileResponse { bytes fileContent = 1; }
 
 message VerifyProofRequest {
   string sessionId = 1;
-  repeated Hash proof = 2;
+  repeated bytes proof = 2;
   Hash targetHash = 3;
   Hash rootHash = 4;
 }

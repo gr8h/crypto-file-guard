@@ -155,7 +155,7 @@ func (s *Server) ConstructMerkleTree(sessionID string) (merkletree.Hash, error) 
 }
 
 // GetProof returns the Merkle proof for the file at the given index.
-func (s *Server) GetProof(sessionID string, index int) (merkletree.Proof, error) {
+func (s *Server) GetProof(sessionID string, index int) ([][]byte, error) {
 
 	if sessionID == "" {
 		return nil, fmt.Errorf("server: session ID is empty")
@@ -186,12 +186,20 @@ func (s *Server) GetFile(sessionID string, index int) (merkletree.Hash, error) {
 	return s.sessions[sessionID].Tree.GetLeafByIndex(index)
 }
 
-// VerifyProof verifies the given proof for the given data block and root hash.
-func (s *Server) VerifyProof(sessionID string, proof merkletree.Proof, fileHash merkletree.Hash, rootHash merkletree.Hash) (bool, error) {
+// get file content
+func (s *Server) GetFileContent(sessionID string, index int) ([]byte, error) {
 	if sessionID == "" {
-		return false, fmt.Errorf("server: session ID is empty")
+		return nil, fmt.Errorf("server: session ID is empty")
 	}
-	return s.sessions[sessionID].Tree.VerifyProof(proof, fileHash, rootHash)
+
+	storagePath := filepath.Join(s.BaseStoragePath, sessionID)
+	filePath := filepath.Join(storagePath, strconv.Itoa(index))
+
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("server: failed to read file %s: %v", filePath, err)
+	}
+	return content, nil
 }
 
 // indexOf returns the index of the given item in the slice.

@@ -8,7 +8,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/gr8h/crypto-file-guard/pkg/merkletree"
 	pb "github.com/gr8h/crypto-file-guard/server/pb"
 	server "github.com/gr8h/crypto-file-guard/server/pkg"
 )
@@ -20,9 +19,9 @@ type fileGuardServer struct {
 
 func (fgs *fileGuardServer) NewSession(ctx context.Context, req *pb.NewSessionRequest) (*pb.NewSessionResponse, error) {
 
-	sessionID := fgs.Server.NewSession()
+	sessionId := fgs.Server.NewSession()
 
-	return &pb.NewSessionResponse{SessionId: &pb.SessionID{Value: sessionID}}, nil
+	return &pb.NewSessionResponse{SessionId: sessionId}, nil
 }
 
 func (fgs *fileGuardServer) ConstructMerkleTree(ctx context.Context, req *pb.ConstructMerkleTreeRequest) (*pb.ConstructMerkleTreeResponse, error) {
@@ -31,14 +30,13 @@ func (fgs *fileGuardServer) ConstructMerkleTree(ctx context.Context, req *pb.Con
 		return nil, err
 	}
 
-	// Convert the rootHash to the protobuf format
 	protobufRootHash := &pb.Hash{Value: rootHash[:]}
 
 	return &pb.ConstructMerkleTreeResponse{RootHash: protobufRootHash}, nil
 }
 
 func (fgs *fileGuardServer) GetFile(ctx context.Context, req *pb.GetFileRequest) (*pb.GetFileResponse, error) {
-	content, err := fgs.Server.GetFile(req.GetSessionId(), int(req.GetIndex()))
+	content, err := fgs.Server.GetFileContent(req.GetSessionId(), int(req.GetIndex()))
 	if err != nil {
 		return nil, err
 	}
@@ -51,14 +49,7 @@ func (fgs *fileGuardServer) GetProof(ctx context.Context, req *pb.GetProofReques
 		return nil, err
 	}
 
-	// Convert the proof to the protobuf format if necessary
-	// This is a simplified representation
-	var proofBytes []*pb.Hash
-	for _, p := range proof {
-		proofBytes = append(proofBytes, &pb.Hash{Value: p[:]})
-	}
-
-	return &pb.GetProofResponse{Proof: proofBytes}, nil
+	return &pb.GetProofResponse{Proof: proof}, nil
 }
 
 func (fgs *fileGuardServer) AddFile(ctx context.Context, req *pb.AddFileRequest) (*pb.AddFileResponse, error) {
@@ -67,19 +58,6 @@ func (fgs *fileGuardServer) AddFile(ctx context.Context, req *pb.AddFileRequest)
 		return nil, err
 	}
 	return &pb.AddFileResponse{}, nil
-}
-
-func (fgs *fileGuardServer) VerifyProof(ctx context.Context, req *pb.VerifyProofRequest) (*pb.VerifyProofResponse, error) {
-	proof := make(merkletree.Proof, len(req.GetProof()))
-	for i, p := range req.GetProof() {
-		proof[i] = p.GetValue()
-	}
-
-	valid, err := fgs.Server.VerifyProof(req.GetSessionId(), proof, req.GetTargetHash().GetValue(), req.GetRootHash().GetValue())
-	if err != nil {
-		return nil, err
-	}
-	return &pb.VerifyProofResponse{Valid: valid}, nil
 }
 
 func main() {
@@ -91,7 +69,6 @@ func main() {
 	s := grpc.NewServer()
 	reflection.Register(s)
 
-	// Initialize your Server struct here.
 	serverInstance := server.NewServer("")
 
 	pb.RegisterFileGuardServer(s, &fileGuardServer{Server: serverInstance})

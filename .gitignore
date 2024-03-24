@@ -24,3 +24,6 @@ go.work
 /go.sum
 /go.mod
 sumdb/
+
+/server/files/
+/client/files/roothash/

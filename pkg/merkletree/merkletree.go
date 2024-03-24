@@ -9,7 +9,6 @@ import (
 
 type Data []byte
 type Hash []byte
-type Proof []Hash
 
 // MerkleTree represents the structure of a Merkle tree
 type MerkleTree struct {
@@ -93,8 +92,8 @@ func NewMerkleTree(dataHashes []Hash) (*MerkleTree, error) {
 }
 
 // GenerateProof returns the Merkle proof for the given data block.
-func (t *MerkleTree) GenerateProof(targetHash Hash) ([]Hash, error) {
-	var proof []Hash
+func (t *MerkleTree) GenerateProof(targetHash Hash) ([][]byte, error) {
+	var proof [][]byte
 
 	var generate func(node *MerkleNode) bool
 	generate = func(node *MerkleNode) bool {
@@ -153,7 +152,7 @@ func (t *MerkleTree) GetRootHash() (Hash, error) {
 }
 
 // VerifyProof verifies the given proof for the given data block and root hash.
-func (t *MerkleTree) VerifyProof(proof []Hash, targetHash Hash, rootHash Hash) (bool, error) {
+func (t *MerkleTree) VerifyProof(proof [][]byte, targetHash Hash, rootHash Hash) (bool, error) {
 	currentHash := targetHash
 	index, err := t.GetLeafIndex(currentHash)
 	if err != nil {
@@ -165,9 +164,9 @@ func (t *MerkleTree) VerifyProof(proof []Hash, targetHash Hash, rootHash Hash) (
 
 		// Determine the order of concatenation
 		if index%2 == 0 {
-			dataToHash = append(Hash(currentHash), Hash(hash)...)
+			dataToHash = append([]byte(currentHash), []byte(hash)...)
 		} else {
-			dataToHash = append(Hash(hash), Hash(currentHash)...)
+			dataToHash = append([]byte(hash), []byte(currentHash)...)
 		}
 
 		index = index / 2

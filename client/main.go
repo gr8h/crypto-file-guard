@@ -1,96 +1,114 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
+	"strconv"
+	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
 	pb "github.com/gr8h/crypto-file-guard/client/pb"
+	client "github.com/gr8h/crypto-file-guard/client/pkg"
 )
-
-const StoragePath = "./client/files"
 
 func main() {
 	conn, err := grpc.Dial("localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
-
 	if err != nil {
 		log.Fatalf("failed to connect: %v", err)
 	}
+
 	defer conn.Close()
 
-	client := pb.NewFileGuardClient(conn)
+	server := pb.NewFileGuardClient(conn)
 
-	// Connect to the server
-	s, err := client.NewSession(context.Background(), &pb.NewSessionRequest{})
-	if err != nil {
-		log.Fatalf("error creating new server: %v", err)
-	}
+	// ----------------- Files ----------------- ///
+	files := []string{"0.txt", "1.txt", "2.txt", "3.txt", "4.txt", "5.txt", "6.txt"}
 
-	sessionId := s.GetSessionId().GetValue()
-	fmt.Printf("Session ID: %s\n", sessionId)
+	// ----------------- CMD ----------------- ///
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("> Enter the session ID or leave empty to generate a new one:")
+	sessionId, _ := reader.ReadString('\n')
+	sessionId = strings.TrimSpace(sessionId)
 
-	// add the current working directory to filePath
-	rootHash, err := ConstructMerkleTree(client, sessionId)
-	if err != nil {
-		log.Fatalf("error constructing Merkle tree: %v", err)
-	}
-
-	fmt.Printf("Merkle tree constructed successfully - Root hash: %x\n", rootHash.GetRootHash().Value)
-
-	// Get proof for the first file
-	proof, err := client.GetProof(context.Background(), &pb.GetProofRequest{Index: 0, SessionId: sessionId})
-	if err != nil {
-		log.Fatalf("error getting proof: %v", err)
-	}
-
-	fileContenet, err := client.GetFile(context.Background(), &pb.GetFileRequest{Index: 0, SessionId: sessionId})
-	if err != nil {
-		log.Fatalf("error getting file content: %v", err)
-	}
-
-	fmt.Printf("File content: %x\n", fileContenet.GetFileContent())
-	targetHashPB := &pb.Hash{Value: fileContenet.GetFileContent()}
-
-	isValid, err := client.VerifyProof(context.Background(), &pb.VerifyProofRequest{Proof: proof.GetProof(), TargetHash: targetHashPB, RootHash: rootHash.GetRootHash(), SessionId: sessionId})
-	if err != nil {
-		log.Fatalf("error verifying proof: %v", err)
-	}
-
-	if isValid.GetValid() {
-		fmt.Println("Proof is valid")
+	// ----------------- Session ----------------- ///
+	if sessionId == "" {
+		s, err := server.NewSession(context.Background(), &pb.NewSessionRequest{})
+		if err != nil {
+			log.Fatalf("error creating new session: %v", err)
+		}
+		sessionId = s.GetSessionId()
+		fmt.Printf("New session ID: %s\n", sessionId)
 	} else {
-		fmt.Println("Proof is invalid")
-	}
-}
-
-func ConstructMerkleTree(client pb.FileGuardClient, sessionId string) (*pb.ConstructMerkleTreeResponse, error) {
-	files := []string{"0.txt", "1.txt", "2.txt", "3.txt", "4.txt"}
-	for _, file := range files {
-		file = filepath.Join(StoragePath, file)
-		file, err := filepath.Abs(file)
-		if err != nil {
-			return nil, fmt.Errorf("error getting absolute path for file %s: %v", file, err)
-		}
-
-		content, err := os.ReadFile(file)
-		if err != nil {
-			return nil, fmt.Errorf("error reading file %s: %v", file, err)
-		}
-
-		_, err = client.AddFile(context.Background(), &pb.AddFileRequest{Content: content, SessionId: sessionId})
-		if err != nil {
-			return nil, fmt.Errorf("error uploading file %s: %v", filepath.Base(file), err)
-		}
+		fmt.Printf("Using existing session ID: %s\n", sessionId)
 	}
 
-	rootHash, err := client.ConstructMerkleTree(context.Background(), &pb.ConstructMerkleTreeRequest{SessionId: sessionId})
-	if err != nil {
-		return nil, fmt.Errorf("error constructing Merkle tree: %v", err)
+	// ----------------- Action ----------------- ///
+	fmt.Println("> Enter the action you want to perform: \n - construct \n - verify")
+	action, _ := reader.ReadString('\n')
+	action = strings.TrimSpace(action)
+
+	switch action {
+	case "construct":
+		fmt.Println("> Please specify number of file(s) to add.")
+		input, _ := reader.ReadString('\n')
+		inputT := strings.TrimSpace(input)
+		numberOfFiles, _ := strconv.Atoi(inputT)
+
+		rootHash, err := client.ConstructMerkleTree(server, sessionId, files[:numberOfFiles])
+		if err != nil {
+			log.Fatalf("error constructing Merkle tree: %v", err)
+		}
+
+		err = client.WriteFile(sessionId, "roothash", rootHash.GetRootHash().Value)
+		if err != nil {
+			log.Fatalf("error writing root hash: %v", err)
+		}
+
+		fmt.Printf("Merkle tree constructed successfully - Root hash: %x\n", rootHash.GetRootHash().Value)
+
+	case "verify":
+		fmt.Println("> Please specify the file index to verify.")
+		input, _ := reader.ReadString('\n')
+		inputT := strings.TrimSpace(input)
+		fileIndex, _ := strconv.Atoi(inputT)
+
+		proof, err := server.GetProof(context.Background(), &pb.GetProofRequest{Index: int32(fileIndex), SessionId: sessionId})
+		if err != nil {
+			log.Fatalf("error getting proof: %v", err)
+		}
+
+		fileContent, err := server.GetFile(context.Background(), &pb.GetFileRequest{Index: int32(fileIndex), SessionId: sessionId})
+		if err != nil {
+			log.Fatalf("error getting file content: %v", err)
+		}
+
+		rootHash, err := client.ReadFile(sessionId, "roothash")
+		if err != nil {
+			log.Fatalf("error reading root hash: %v", err)
+		}
+
+		fileHash, err := client.HashData(fileContent.GetFileContent())
+		if err != nil {
+			log.Fatalf("error hashing file content: %v", err)
+		}
+
+		isValid, err := client.VerifyProof(proof.GetProof(), fileHash, rootHash, fileIndex)
+		if err != nil {
+			log.Fatalf("error verifying proof: %v", err)
+		}
+
+		if isValid {
+			fmt.Println("Proof is valid")
+		} else {
+			fmt.Println("Proof is invalid")
+		}
+
+	default:
+		fmt.Println("Invalid action. Use -action with 'addfiles', 'getproof', or 'verify'")
 	}
-	return rootHash, nil
 }

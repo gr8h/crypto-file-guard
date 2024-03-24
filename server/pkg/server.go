@@ -156,6 +156,9 @@ func (s *Server) ConstructMerkleTree(sessionID string) (merkletree.Hash, error) 
 
 // GetProof returns the Merkle proof for the file at the given index.
 func (s *Server) GetProof(sessionID string, index int) ([][]byte, error) {
+	if s.sessions[sessionID].Tree == nil {
+		return nil, fmt.Errorf("server: Merkle tree is not constructed")
+	}
 
 	if sessionID == "" {
 		return nil, fmt.Errorf("server: session ID is empty")
@@ -180,6 +183,10 @@ func (s *Server) GetProof(sessionID string, index int) ([][]byte, error) {
 
 // GetFile returns the content of a file given its index.
 func (s *Server) GetFile(sessionID string, index int) (merkletree.Hash, error) {
+	if s.sessions[sessionID].Tree == nil {
+		return nil, fmt.Errorf("server: Merkle tree is not constructed")
+	}
+
 	if sessionID == "" {
 		return nil, fmt.Errorf("server: session ID is empty")
 	}
@@ -188,6 +195,9 @@ func (s *Server) GetFile(sessionID string, index int) (merkletree.Hash, error) {
 
 // get file content
 func (s *Server) GetFileContent(sessionID string, index int) ([]byte, error) {
+	if s.sessions[sessionID].Tree == nil {
+		return nil, fmt.Errorf("server: Merkle tree is not constructed")
+	}
 	if sessionID == "" {
 		return nil, fmt.Errorf("server: session ID is empty")
 	}

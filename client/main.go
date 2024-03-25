@@ -26,7 +26,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to connect: %v", err)
 	}
-
 	defer conn.Close()
 
 	server := pb.NewFileGuardClient(conn)
@@ -114,6 +113,6 @@ func main() {
 		}
 
 	default:
-		fmt.Println("Invalid action. Use -action with 'addfiles', 'getproof', or 'verify'")
+		fmt.Println("Invalid action. Use -action with 'construct', or 'verify'")
 	}
 }
